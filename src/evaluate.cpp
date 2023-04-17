@@ -18,6 +18,7 @@ struct CirIO{
 };
 
 struct Match{
+    // the first value of input/output vector is cir1 and the other is cir2.
     vector< vector< pair<string, bool> > > input;
     vector< vector<pair< string, bool> > > output;
     vector<string> one;
@@ -71,6 +72,10 @@ Match readOutput(ifstream* file){
                 string name;
                 ss >> number >> isPositive >> name;
                 if(number == 1){
+                    if(check){
+                        cout << "There are multiple cir1 " << (mod ? "input" : "output") << " port(" << name << ") in a group." << endl;
+                        exit(1);
+                    }
                     check = true;
                     tmp[0].first = name;
                     tmp[0].second = isPositive == '+';
@@ -80,6 +85,10 @@ Match readOutput(ifstream* file){
             }
             if(!check){
                 cout << "Can not find cir1 port." << endl;
+                exit(1);
+            }
+            if(tmp.size() < 2){
+                cout << "Can not find cir2 port." << endl;
                 exit(1);
             }
             if(mod){
@@ -109,7 +118,42 @@ Match readOutput(ifstream* file){
     }
     return re;
 }
-
+void checkOutput(Match match){
+    set<string> cir2, cir1;
+    for(auto groups : match.input ){
+        if(cir1.find(groups[0].first) != cir1.end()){
+            cout << "cir1 port "<< groups[0].first << " is matched to multiple value." << endl;
+            exit(1);
+        }else{
+            cir1.insert(groups[0].first);
+        }
+        for(int i = 1 ; i < static_cast<int>(groups.size()) ; i ++){
+            if(cir2.find(groups[i].first) != cir2.end()){
+                cout << "cir2 port "<< groups[i].first << " is matched to multiple value." << endl;
+                exit(1);
+            }else{
+                cir2.insert(groups[i].first);
+            }
+        }
+    }
+    for(auto it : match.one){
+        if(cir2.find(it) != cir2.end()){
+            cout << "cir2 port "<< it << " is matched to multiple value." << endl;
+            exit(1);
+        }else{
+            cir2.insert(it);
+        }
+    }
+    for(auto it : match.zero){
+        if(cir2.find(it) != cir2.end()){
+            cout << "cir2 port "<< it << " is matched to multiple value." << endl;
+            exit(1);
+        }else{
+            cir2.insert(it);
+        }
+    }
+    return;
+}
 void writeNewCir(
         CirIO cirIO1, CirIO cirIO2, Match match,
         string cir1Path, string cir2Path, ifstream* cirFile1, ifstream* cirFile2){
@@ -191,21 +235,56 @@ void writeNewCir(
         matchInput[1].insert(match.zero[i]);
     }
     for(int i = 0 ; i < static_cast<int>(cirIO1.input.size()) ; i++){
-        if(matchInput[0].find(cirIO1.input[i]) == matchInput[0].end()){
+        auto it = matchInput[0].find(cirIO1.input[i]);
+        if(it == matchInput[0].end()){
             newCirFile1 << "input unMatchOutput" << cnt << ";\n";
             newCirFile2 << "input unMatchOutput" << cnt << ";\n";
             setVector[0].push_back("assign " + cirIO1.input[i] + " = " + "unMatchOutput" + to_string(cnt) + ";\n");
             cnt++;
+        }else{
+            matchInput[0].erase(it);
         }
     }
     for(int i = 0 ; i < static_cast<int>(cirIO2.input.size()) ; i++){
-        if(matchInput[1].find(cirIO2.input[i]) == matchInput[1].end()){
+        auto it = matchInput[1].find(cirIO2.input[i]);
+        if( it == matchInput[1].end()){
             newCirFile1 << "input unMatchOutput" << cnt << ";\n";
             newCirFile2 << "input unMatchOutput" << cnt << ";\n";
             setVector[1].push_back("assign " + cirIO2.input[i] + " = " + "unMatchOutput" + to_string(cnt) + ";\n");
             cnt++;
+        }else{
+            matchInput[1].erase(it);
         }
     }
+    if(matchInput[0].size() != 0){
+        cout << "There is a input port(" << *matchInput[0].begin() << ") not exist circuit 1 but occur in output file." << endl;
+        exit(1);
+    }
+    if(matchInput[1].size() != 0){
+        cout << "There is a input port(" << *matchInput[1].begin() << ") not exist circuit 2 but occur in output file." << endl;
+        exit(1);
+    }
+    for(int i = 0 ; i < static_cast<int>(cirIO1.output.size()) ; i++){
+        auto it = matchOutput[0].find(cirIO1.output[i]);
+        if(it != matchOutput[0].end()){
+            matchOutput[0].erase(it);
+        }
+    }
+    for(int i = 0 ; i < static_cast<int>(cirIO2.output.size()) ; i++){
+        auto it = matchOutput[1].find(cirIO2.output[i]);
+        if(it != matchOutput[1].end()){
+            matchOutput[1].erase(it);
+        }
+    }
+    if(matchOutput[0].size() != 0){
+        cout << "There is a output port(" << *matchOutput[0].begin() << ") not exist circuit 1 but occur in output file." << endl;
+        exit(1);
+    }
+    if(matchOutput[1].size() != 0){
+        cout << "There is a output port(" << *matchOutput[1].begin() << ") not exist circuit 2 but occur in output file." << endl;
+        exit(1);
+    }
+
     for(int i = 0 ; i < static_cast<int>(setVector[0].size()) ; i++){
         newCirFile1 << setVector[0][i];
     }
@@ -318,8 +397,8 @@ Report judge(string outPath, string cirPath1, string cirPath2){
     string newCir1Path = "nCir1-" + getNowTime() + ".v";
     string newCir2Path = "nCir2-" + getNowTime() + ".v";
     writeNewCir(cirIO1, cirIO2, match, newCir1Path, newCir2Path, cirFile1, cirFile2);
-
-    bool equivalent =  cecTest(newCir1Path, newCir2Path);
+    checkOutput(match);
+    bool equivalent = cecTest(newCir1Path, newCir2Path);
     report.passed = equivalent;
     outputFile->close();
     cirFile1->close();
