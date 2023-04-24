@@ -7,6 +7,14 @@ INGROUP
 2 + y1
 END
 INGROUP
+1 + b0
+2 + x0
+END
+INGROUP
+1 + b1
+2 + x1
+END
+INGROUP
 1 + c
 2 + z
 END
@@ -17,8 +25,4 @@ END
 OUTGROUP
 1 + h1
 2 + u1
-END
-CONSTGROUP
-+ x0
-- x1
 END

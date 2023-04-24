@@ -23,7 +23,7 @@ string formatTime(time_t inputTime){
     gmtime_r(&inputTime, &tm_struct);
 
     ostringstream oss;
-    oss << put_time(std::localtime(&inputTime), "%y-%m-%d_%OH:%OM:%OS");
+    oss << put_time(std::localtime(&inputTime), "20%y-%m-%d_%OH:%OM:%OS");
     string str = oss.str();
     return str;
 }

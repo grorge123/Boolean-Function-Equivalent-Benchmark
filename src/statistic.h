@@ -12,6 +12,7 @@ struct Report{
     string cir1, cir2;
     time_t time;
     bool passed;
+    double score;
 };
 
 void reportOutput(Report report);

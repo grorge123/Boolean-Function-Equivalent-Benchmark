@@ -386,7 +386,7 @@ bool cecTest(string cir1, string cir2){
 }
 
 Report judge(string outPath, string cirPath1, string cirPath2){
-    Report report{cirPath1,cirPath2,time(nullptr),true};
+    Report report{cirPath1,cirPath2,time(nullptr),true, 0};
     ifstream* outputFile = readFile(outPath);
     ifstream* cirFile1 = readFile(cirPath1);
     ifstream* cirFile2 = readFile(cirPath2);
@@ -394,12 +394,19 @@ Report judge(string outPath, string cirPath1, string cirPath2){
     CirIO cirIO1 = readIO(cirFile1);
     CirIO cirIO2 = readIO(cirFile2);
     Match match = readOutput(outputFile);
+    int max_pts = cirIO1.output.size() + cirIO2.output.size();
+    int points = 0;
+    for(auto it : match.output){
+        points += it.size();
+    }
     string newCir1Path = "nCir1-" + getNowTime() + ".v";
     string newCir2Path = "nCir2-" + getNowTime() + ".v";
     writeNewCir(cirIO1, cirIO2, match, newCir1Path, newCir2Path, cirFile1, cirFile2);
     checkOutput(match);
     bool equivalent = cecTest(newCir1Path, newCir2Path);
     report.passed = equivalent;
+    if(report.passed)
+        report.score = static_cast<double>(points) / max_pts * 100;
     outputFile->close();
     cirFile1->close();
     cirFile2->close();
