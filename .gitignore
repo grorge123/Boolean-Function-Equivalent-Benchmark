@@ -5,3 +5,4 @@ lib/*.a
 abc-2c1c83f
 abc.rc
 trace.cnf
+outputFile

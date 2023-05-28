@@ -26,4 +26,4 @@ clean:remove
 	rm -rf $(obj) $(exe)
 
 remove:
-	rm -f nCir* output-*
+	rm -f nCir* output-* rm *.aig rm *.cnf rm stdoutOutput.txt

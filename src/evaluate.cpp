@@ -9,6 +9,7 @@
 #include <cctype>
 #include <ctime>
 #include <cstdio>
+#include <algorithm>
 
 extern Abc_Frame_t * pAbc;
 
@@ -30,23 +31,56 @@ CirIO readIO(ifstream* file){
     file->seekg(0, std::ios::beg);
     CirIO re;
     string input;
+    vector<string> portVector;
+    bool noStop = true;
+    do{
+        getline(*file, input);
+        if (input.find(";") != string::npos) noStop = false;
+        stringstream ss;
+        string inputName;
+        ss.clear();
+        ss << input;
+        while (getline(ss, inputName, ',')){
+            while(inputName.size() != 0 && !(isalpha(inputName.back()) || isdigit(inputName.back()) || inputName.back() == '_') )inputName.pop_back();
+            while(inputName.size() != 0 && !(isalpha(inputName.front()) || isdigit(inputName.front()) || inputName.front() == '_') )inputName.erase(inputName.begin());
+            if(inputName.size() == 0 || inputName.find("module") != string::npos || inputName.find("top") != string::npos)continue;
+            portVector.push_back(inputName);
+        }
+    } while (noStop);
     while( getline(*file, input) ){
+        bool readIO = false;
         if(input.find("input") != string::npos || input.find("output") != string::npos) {
+            readIO = true;
             bool mod = input.find("input") != string::npos;
             stringstream ss;
             ss << input;
             string inputName;
             ss >> inputName; // remove input operator
-            while (getline(ss, inputName, ',')){
-                while(inputName.size() != 0 && !(isalpha(inputName.back()) || isdigit(inputName.back()) || inputName.back() == '_') )inputName.pop_back();
-                while(inputName.size() != 0 && !(isalpha(inputName.front()) || isdigit(inputName.front()) || inputName.front() == '_') )inputName.erase(inputName.begin());
-                if(inputName.size() == 0)continue;
-                if(mod){
-                    re.input.push_back(inputName);
-                }else{
-                    re.output.push_back(inputName);
+            do{
+                while (getline(ss, inputName, ',')){
+                    if(inputName.find(";") != string::npos) {
+                        readIO = false;
+                    }
+                    while(inputName.size() != 0 && !(isalpha(inputName.back()) || isdigit(inputName.back()) || inputName.back() == '_') )inputName.pop_back();
+                    while(inputName.size() != 0 && !(isalpha(inputName.front()) || isdigit(inputName.front()) || inputName.front() == '_') )inputName.erase(inputName.begin());
+                    if(inputName.size() == 0)continue;
+                    if(mod){
+                        re.input.push_back(inputName);
+                    }else{
+                        re.output.push_back(inputName);
+                    }
                 }
-            }
+                if(readIO){
+                    getline(*file, input);
+                    ss.clear();
+                    ss << input;
+                }
+            } while (readIO);
+        }
+    }
+    for(auto i : portVector){
+        if((find(re.input.begin(), re.input.end(), i) == re.input.end()) && (find(re.output.begin(), re.output.end(), i) == re.output.end())){
+            re.output.push_back(i);
         }
     }
     return re;
@@ -301,11 +335,19 @@ void writeNewCir(
     while (getline(*cirFile1, input)){
         if(!(input.find("input") != string::npos || input.find("output") != string::npos || input.find("module ") != string::npos)){
             newCirFile1 << input << '\n';
+        }else{
+            while (input.find(";") == string::npos){
+                getline(*cirFile1, input);
+            }
         }
     }
     while (getline(*cirFile2, input)){
         if(!(input.find("input") != string::npos || input.find("output") != string::npos || input.find("module ") != string::npos)){
             newCirFile2 << input << '\n';
+        }else{
+            while (input.find(";") == string::npos){
+                getline(*cirFile2, input);
+            }
         }
     }
     newCirFile1.close();
