@@ -1,4 +1,4 @@
 ./testCase/case21_cir1.v
 0
-./case21_cir2.v
+./testCase/case21_cir2.v
 0
