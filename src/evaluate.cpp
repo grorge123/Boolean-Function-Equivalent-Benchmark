@@ -10,6 +10,7 @@
 #include <ctime>
 #include <cstdio>
 #include <algorithm>
+#include <regex>
 
 extern Abc_Frame_t * pAbc;
 
@@ -244,23 +245,23 @@ void writeNewCir(
     }
 
     for(int i = 0 ; i < static_cast<int>(match.output.size()) ; i++){
-        newCirFile1 << "output matchOutput" << cnt << ";\n";
-        newCirFile2 << "output matchOutput" << cnt << ";\n";
-        matchOutput[0].insert(match.output[i][0].first);
-        if(match.output[i][0].second){
-            setVector[0].push_back( "assign matchOutput" + to_string(cnt) + " = " + match.output[i][0].first + ";\n");
-        }else{
-            setVector[0].push_back("not( matchOutput" + to_string(cnt) + ", " + match.output[i][0].first + " );\n");
-        }
         for(int q = 1 ; q < static_cast<int>(match.output[i].size()) ; q++){
+            newCirFile1 << "output matchOutput" << cnt << ";\n";
+            newCirFile2 << "output matchOutput" << cnt << ";\n";
+            matchOutput[0].insert(match.output[i][0].first);
+            if(match.output[i][0].second){
+                setVector[0].push_back( "assign matchOutput" + to_string(cnt) + " = " + match.output[i][0].first + ";\n");
+            }else{
+                setVector[0].push_back("not( matchOutput" + to_string(cnt) + ", " + match.output[i][0].first + " );\n");
+            }
             matchOutput[1].insert(match.output[i][q].first);
             if(match.output[i][q].second){
                 setVector[1].push_back("assign matchOutput" + to_string(cnt) + " = " + match.output[i][q].first + ";\n");
             }else{
                 setVector[1].push_back("not( matchOutput" + to_string(cnt) + ", " + match.output[i][q].first + " );\n");
             }
+            cnt++;
         }
-        cnt++;
     }
     for(int i = 0 ; i < static_cast<int>(match.one.size()) ; i++){
         matchInput[1].insert(match.one[i]);
@@ -378,7 +379,26 @@ bool readFileEquivalent(string path){
     }
     return equivalent;
 }
+void removeGateNames(const std::string& filePath) {
+    std::ifstream inputFile(filePath);
+    std::string outputFilePath = filePath + ".modified";
+    std::ofstream outputFile(outputFilePath);
+
+    std::regex gateNameRegex("(\\bnot\\b|\\band\\b|\\bnand\\b|\\bor\\b|\\bxor\\b|\\bxnor\\b|\\bbuf\\b|\\bnor\\b)\\s*(\\w+)");
+
+    for (std::string line; std::getline(inputFile, line); ) {
+        std::string modifiedLine = std::regex_replace(line, gateNameRegex, "$1");
+
+        outputFile << modifiedLine << std::endl;
+    }
+
+    inputFile.close();
+    outputFile.close();
+    rename(outputFilePath.c_str(), filePath.c_str());
+}
 bool cecTest(string cir1, string cir2){
+    removeGateNames(cir1);
+    removeGateNames(cir2);
     string resultPath = "output-" + getNowTime() + ".txt";
     cout.flush();
     FILE *saveStdout = stdout;
