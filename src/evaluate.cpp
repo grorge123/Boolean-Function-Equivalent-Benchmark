@@ -422,7 +422,7 @@ bool cecTest(string cir1, string cir2){
 //        fflush(stdout);
 //        finalResult = readFileEquivalent(resultPath) && finalResult;
 
-        command = "cec -s " + cir1 + " " + cir2;
+        command = "cec " + cir1 + " " + cir2;
         if (Cmd_CommandExecute(pAbc, command.c_str())){
             cout << "Cannot execute command \"" << command << "\".\n";
             exit(1);
